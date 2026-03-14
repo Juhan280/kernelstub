@@ -29,6 +29,8 @@ class OS():
     name_pretty = "Linux"
     name = "Linux"
     version = "1.0"
+    id = "linux"
+    machine_id = None
     cmdline = ['quiet', 'splash']
     kernel_name = 'vmlinuz'
     initrd_name = 'initrd.img'
@@ -44,6 +46,8 @@ class OS():
         self.name_pretty = self.get_os_name()
         self.name = self.clean_names(self.name_pretty)
         self.version = self.get_os_version()
+        self.id = self.get_os_id()
+        self.machine_id = self.get_machine_id()
         self.cmdline = self.get_os_cmdline()
 
     def clean_names(self, name):
@@ -117,6 +121,13 @@ class OS():
                 version =  item.split('=')[1]
                 return self.strip_quotes(version[:-1])
 
+    def get_os_id(self):
+        os_release = self.get_os_release()
+        for item in os_release:
+            if item.startswith('ID='):
+                id =  item.split('=')[1]
+                return self.strip_quotes(id[:-1])
+
     def strip_quotes(self, value):
         new_value = value
         if value.startswith('"'):
@@ -136,3 +147,10 @@ class OS():
                           'VERSION_ID="%s"\n' % self.version]
 
         return os_release
+
+    def get_machine_id(self):
+        try:
+            with open("/etc/machine-id") as machine_id_file:
+                return machine_id_file.read().strip()
+        except FileNotFoundError:
+            return None

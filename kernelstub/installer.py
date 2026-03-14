@@ -58,11 +58,11 @@ class Installer():
         if not os.path.exists(self.entry_dir):
             os.makedirs(self.entry_dir)
 
-
     def backup_old(self, kernel_opts, setup_loader=False, simulate=False):
         self.log.info('Backing up old kernel')
 
         old_path = Path(self.opsys.old_kernel_path).resolve()
+        old_version = old_path.name.replace('vmlinuz-', '')
         new_path = Path(self.opsys.kernel_path).resolve()
         if old_path == new_path:
             self.log.info('No old kernel found, skipping')
@@ -102,8 +102,13 @@ class Installer():
             initrd_line = '/EFI/%s-%s/%s-previous' % (self.opsys.name,
                                                       self.drive.root_uuid,
                                                       self.opsys.initrd_name)
+
+            kernel_path = Path(self.opsys.kernel_path).resolve()
+            version = kernel_path.name.replace('vmlinuz-', '')
+
             self.make_loader_entry(
                 self.opsys.name_pretty,
+                version,
                 linux_line,
                 initrd_line,
                 kernel_opts,
@@ -190,6 +195,7 @@ class Installer():
             self.ensure_dir(self.entry_dir)
             self.make_loader_entry(
                 self.opsys.name_pretty,
+                version,
                 linux_line,
                 initrd_line,
                 kernel_opts,
@@ -224,10 +230,16 @@ class Installer():
         )
 
 
-    def make_loader_entry(self, title, linux, initrd, options, filename):
+    def make_loader_entry(self, title, version, linux, initrd, options, filename):
         self.log.info('Making entry file for %s' % title)
         with open('%s.conf' % filename, mode='w') as entry:
             entry.write('title %s\n' % title)
+            entry.write('version %s\n' % version)
+            entry.write('sort-key %s\n' % self.opsys.id)
+            # add machine-id if it exists
+            if self.opsys.machine_id is not None:
+                entry.write('machine-id %s\n' % self.opsys.machine_id)
+
             entry.write('linux %s\n' % linux)
             entry.write('initrd %s\n' % initrd)
             entry.write('options %s\n' % options)
